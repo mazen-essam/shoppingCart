@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seafood Menu and Cart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-300">
+    <!-- Navbar (User Login Info) -->
+    <nav class="bg-blue-600 text-white p-4">
+      <div class="container mx-auto flex justify-between">
+        <h1 class="text-xl font-bold">
+          Welcome, <span id="userName">User</span>
+        </h1>
+        <button
+          onclick="logout()"
+          class="text-white hover:bg-blue-500 px-4 py-2 rounded"
+        >
+          Logout
+        </button>
+      </div>
+    </nav>
+
+    <!-- Menu Section -->
+    <div class="container mx-auto mt-10 p-4">
+      <h1 class="text-4xl font-bold text-center">Seafood Menu</h1>
+      <div
+        id="menu"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10"
+      >
+        <!-- Items will be dynamically added here -->
+      </div>
+    </div>
+
+    <!-- Cart Section -->
+    <div class="container mx-auto mt-10 p-4">
+      <h2 class="text-3xl font-bold">Cart</h2>
+      <div id="cart" class="mt-4">
+        <!-- Cart items will be displayed here -->
+      </div>
+      <p id="cartTotal" class="mt-4 text-lg font-bold">Total: $0.00</p>
+      <button
+        class="mt-4 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-400"
+        onclick="clearCart()"
+      >
+        Clear Cart
+      </button>
+    </div>
+
+    <script>
+      // Sample seafood menu data
+      const seafoodMenu = [
+        {
+          id: 1,
+          name: "Grilled Salmon",
+          description: "Delicious grilled salmon",
+          price: 12.99,
+          src: "./assets/1.jpeg",
+        },
+        {
+          id: 2,
+          name: "Shrimp Cocktail",
+          description: "Fresh shrimp served cold",
+          price: 9.99,
+          src: "./assets/2.jpeg",
+        },
+        {
+          id: 3,
+          name: "Lobster Bisque",
+          description: "Creamy lobster soup",
+          price: 14.99,
+          src: "./assets/3.jpeg",
+        },
+        {
+          id: 4,
+          name: "Crab Cakes",
+          description: "Crispy crab cakes",
+          price: 11.99,
+          src: "./assets/4.jpeg",
+        },
+        {
+          id: 5,
+          name: "Fried Calamari",
+          description: "Golden fried calamari",
+          price: 8.99,
+          src: "./assets/5.jpeg",
+        },
+        {
+          id: 6,
+          name: "Oyster Platter",
+          description: "Fresh oysters on ice",
+          price: 15.99,
+          src: "./assets/6.jpeg",
+        },
+      ];
+
+      // Get current user and their cart key
+      let currentUser = localStorage.getItem("currentUser");
+      let cartKey = `cart_${currentUser}`;
+      let cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+      let state = Array(seafoodMenu.length).fill(0);
+
+      // Function to render the menu items
+      function renderMenu() {
+        const menuContainer = document.getElementById("menu");
+        menuContainer.innerHTML = "";
+
+        seafoodMenu.forEach((item, index) => {
+          const itemDiv = document.createElement("div");
+          itemDiv.className = "border rounded-lg p-4 bg-white shadow-md";
+
+          itemDiv.innerHTML = `
+                    <div class="dis">
+                        <h4 class="text-2xl font-semibold">${item.name}</h4>
+                        <p class="mt-2 text-gray-600">${item.description}</p>
+                        <p class="mt-2 text-lg font-bold">$${item.price}</p>
+                    </div>
+                    <img src="${item.src}" alt="${item.name}" class="w-full mx-auto max-h-80  mt-4 rounded-lg" />
+                    <div class="add mt-4">
+                        <p class="text-gray-700">Amount: ${state[index]}</p>
+                        <div class="mt-2 flex space-x-4">
+                            <button class="btn bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-400" onclick="addItems(${index})">
+                                + Add
+                            </button>
+                            <button class="btn bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-400" onclick="delItems(${index})">
+                                - Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+          menuContainer.appendChild(itemDiv);
+        });
+      }
+
+      // Function to render the cart
+      function renderCart() {
+        const cartContainer = document.getElementById("cart");
+        const cartTotal = document.getElementById("cartTotal");
+        cartContainer.innerHTML = "";
+        let total = 0;
+
+        cart.forEach((item) => {
+          const cartItem = document.createElement("div");
+          cartItem.className = "border-b py-2";
+          cartItem.innerHTML = `${item.name} - $${item.price} x ${item.amount}`;
+          cartContainer.appendChild(cartItem);
+          total += item.price * item.amount;
+        });
+
+        cartTotal.textContent = `Total: $${total.toFixed(2)}`;
+      }
+
+      // Function to add items to the cart
+      function addItems(index) {
+        state[index]++;
+        let itemInCart = cart.find((item) => item.id === seafoodMenu[index].id);
+        if (itemInCart) {
+          itemInCart.amount++;
+        } else {
+          cart.push({ ...seafoodMenu[index], amount: 1 });
+        }
+        saveCart();
+        renderMenu();
+        renderCart();
+      }
+
+      // Function to remove items from the cart
+      function delItems(index) {
+        if (state[index] > 0) {
+          state[index]--;
+          let itemInCart = cart.find(
+            (item) => item.id === seafoodMenu[index].id
+          );
+          if (itemInCart) {
+            itemInCart.amount--;
+            if (itemInCart.amount === 0) {
+              cart = cart.filter((item) => item.id !== seafoodMenu[index].id);
+            }
+          }
+          saveCart();
+          renderMenu();
+          renderCart();
+        }
+      }
+
+      // Save cart to localStorage using the unique key for the user
+      function saveCart() {
+        localStorage.setItem(cartKey, JSON.stringify(cart));
+      }
+
+      // Clear cart for the current user
+      function clearCart() {
+        cart = [];
+        saveCart();
+        renderCart();
+      }
+
+      // Logout function (Do NOT clear the cart for the current user)
+      function logout() {
+        localStorage.removeItem("isLoggedIn");
+        window.location.href = "index.html";
+      }
+
+      // Initial render
+      renderMenu();
+      renderCart();
+
+      // Show logged-in user's name from localStorage
+      document.getElementById("userName").textContent = currentUser || "User";
+    </script>
+  </body>
+</html>
